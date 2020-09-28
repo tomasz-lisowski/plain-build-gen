@@ -2,39 +2,43 @@
 
 #include "parse.h"
 
-typedef struct
+enum token
 {
-    string_t const output_path;
-    string_t const source;
-    string_t const include;
-    string_t const comment;
-    string_t const end;
-    string_t const compiler;
-    string_t const compiler_flags;
-    string_t const linker;
-    string_t const linker_flags;
-} token_struct;
-
-static token_struct const tokens = {
-    .output_path = {.len = 13, .s = "[output_path]"},
-    .source = {.len = 8, .s = "[source]"},
-    .include = {.len = 9, .s = "[include]"},
-    .comment = {.len = 2, .s = "//"},
-    .end = {.len = 5, .s = "[end]"},
-    .compiler = {.len = 10, .s = "[compiler]"},
-    .compiler_flags = {.len = 16, .s = "[compiler_flags]"},
-    .linker = {.len = 8, .s = "[linker]"},
-    .linker_flags = {.len = 14, .s = "[linker_flags]"},
+    OUTPUT_PATH = 0,
+    SOURCE = 1,
+    INCLUDE = 2,
+    COMMENT = 3,
+    END = 4,
+    COMPILER = 5,
+    COMPILER_FLAGS = 6,
+    LINKER = 7,
+    LINKER_FLAGS = 8,
+    TOKEN_COUNT,
+    TOKEN_UNKNOWN,
 };
 
-static string_t get_next_line(string_t cfg_raw, uint64_t i)
+static string_t const tokens[TOKEN_COUNT] = {
+    [OUTPUT_PATH] = {.len = 13, .s = "[output_path]"},
+    [SOURCE] = {.len = 8, .s = "[source]"},
+    [INCLUDE] = {.len = 9, .s = "[include]"},
+    [COMMENT] = {.len = 2, .s = "//"},
+    [END] = {.len = 5, .s = "[end]"},
+    [COMPILER] = {.len = 10, .s = "[compiler]"},
+    [COMPILER_FLAGS] = {.len = 16, .s = "[compiler_flags]"},
+    [LINKER] = {.len = 8, .s = "[linker]"},
+    [LINKER_FLAGS] = {.len = 14, .s = "[linker_flags]"},
+};
+
+static string_t get_next_line(string_t cfg_raw, uint64_t start_offset)
 {
-    string_t next_line = {.len = 0, .s = cfg_raw.s};
-    for (; i < cfg_raw.len; ++i)
+    string_t next_line = {.len = 0, .s = cfg_raw.s + start_offset};
+    for (uint64_t i = 0; i < cfg_raw.len - start_offset; ++i)
     {
         ++next_line.len;
-        if (cfg_raw.s[i] == '\n')
+        if (next_line.s[i] == '\r' &&
+            next_line.s[i + 1] == '\n')
         {
+            ++next_line.len; // '\n'
             break;
         }
     }
@@ -66,62 +70,96 @@ static bool str_match_str(string_t str1, string_t str2)
     return true;
 }
 
-static bool line_is_section_header(string_t line)
+static bool str_is_not_section_header(string_t str)
 {
-    bool line_is_empty = line.len == 0;
-    bool line_is_comment = str_match_str(line, tokens.comment);
-    bool line_is_section_end = str_match_str(line, tokens.end);
-    return !(line_is_empty || line_is_comment || line_is_section_end);
+    bool is_empty = str.len == 0;
+    bool is_comment = str_match_str(str, tokens[COMMENT]);
+    bool is_end = str_match_str(str, tokens[END]);
+    bool is_not_header = is_empty || is_end || is_comment;
+    return is_not_header;
+}
+
+static enum token str_to_token(string_t line)
+{
+    for (int i = 0; i < TOKEN_COUNT; ++i)
+    {
+        if (str_match_str(line, tokens[i]))
+        {
+            return i;
+        }
+    }
+    return TOKEN_UNKNOWN;
 }
 
 /*
  Returns the number of bytes parsed when line 
  is a section header and line length otherwise.
 */
-static uint64_t parse_section(string_t const line, uint64_t const line_start, config_t *cfg_parsed)
+static uint64_t parse_section(
+    string_t const str_header,
+    uint64_t const header_start,
+    config_t *cfg_parsed,
+    string_t cfg_raw)
 {
-    if (!line_is_section_header(line))
+    if (str_is_not_section_header(str_header))
     {
-        return line.len;
+        return str_header.len;
     }
 
     parsed_section_t *section;
-    if (str_match_str(line, tokens.include))
+    switch (str_to_token(str_header))
     {
-        section = &cfg_parsed->include;
-    }
-    else if (str_match_str(line, tokens.source))
-    {
-        section = &cfg_parsed->source;
-    }
-    else if (str_match_str(line, tokens.linker_flags))
-    {
-        return line.len;
-    }
-    else if (str_match_str(line, tokens.linker))
-    {
-        return line.len;
-    }
-    else if (str_match_str(line, tokens.compiler_flags))
-    {
-        return line.len;
-    }
-    else if (str_match_str(line, tokens.compiler))
-    {
-        return line.len;
-    }
-    else if (str_match_str(line, tokens.output_path))
-    {
-        section = &cfg_parsed->output_path;
-    }
-    else
-    {
-        fprintf(stderr, "Section contained in the file is not supported.\n");
-        exit(EXIT_FAILURE);
+    case OUTPUT_PATH:
+        section = &(cfg_parsed->output_path);
+        break;
+    case SOURCE:
+        section = &(cfg_parsed->source);
+        break;
+    case INCLUDE:
+        section = &(cfg_parsed->include);
+        break;
+    case COMPILER:
+        section = &cfg_parsed->compiler;
+        break;
+    case COMPILER_FLAGS:
+        section = &cfg_parsed->compiler_flags;
+        break;
+    case LINKER:
+        section = &cfg_parsed->linker;
+        break;
+    case LINKER_FLAGS:
+        section = &cfg_parsed->linker_flags;
+        break;
+    case TOKEN_UNKNOWN:
+    default:
+        return str_header.len;
     }
 
-    // TODO: Parse section here
-    return line.len;
+    string_t section_line;
+    uint64_t section_bytes_read = str_header.len; // Already read the secton header
+    section->arr = 0;
+    section->size = 0;
+    do
+    {
+        section_line = get_next_line(cfg_raw, header_start + section_bytes_read);
+        section_bytes_read += section_line.len;
+        if (str_match_str(section_line, tokens[COMMENT]))
+        {
+            continue;
+        }
+        else if (str_match_str(section_line, tokens[END]))
+        {
+            break;
+        }
+
+        // Store section entry
+        ++section->size;
+        section->arr = realloc(section->arr, section->size * sizeof(string_t));
+        section->arr[section->size - 1].len = section_line.len - 2; // Ignore '\r\n' at end of line
+        section->arr[section->size - 1].s = section_line.s;
+    } while (header_start + section_bytes_read < cfg_raw.len);
+
+    return section_bytes_read;
 }
 
 config_t parse_cfg_raw(string_t cfg_raw)
@@ -132,7 +170,7 @@ config_t parse_cfg_raw(string_t cfg_raw)
     while (bytes_read < cfg_raw.len)
     {
         line = get_next_line(cfg_raw, bytes_read);
-        bytes_read += parse_section(line, bytes_read, &cfg_parsed);
+        bytes_read += parse_section(line, bytes_read, &cfg_parsed, cfg_raw);
     }
     return cfg_parsed;
 }

@@ -5,6 +5,7 @@
 
 #include "file_system.h"
 #include "parse.h"
+#include "build_script_gen.h"
 
 int main(int argc, char *argv[argc + 1])
 {

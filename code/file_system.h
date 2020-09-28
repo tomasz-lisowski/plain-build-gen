@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <inttypes.h>
+#include <stdlib.h>
 
 #ifndef FILE_SYSTEM_H
 #define FILE_SYSTEM_H
