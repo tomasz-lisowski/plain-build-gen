@@ -28,7 +28,9 @@ int main(int argc, char *argv[argc + 1])
     cfg_raw.s = cfg_raw_buffer;
     cfg_raw.len = cfg_raw_size;
     config_t cfg_parsed = parse_cfg_raw(cfg_raw);
-    // TODO: Transform parsed config into a build script
+
+    string_t build_script = gen_build_script(&cfg_parsed);
+    printf("%s\n", build_script.s);
 
     return EXIT_SUCCESS;
 }
