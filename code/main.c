@@ -30,7 +30,12 @@ int main(int argc, char *argv[argc + 1])
     config_t cfg_parsed = parse_cfg_raw(cfg_raw);
 
     string_t build_script = gen_build_script(&cfg_parsed);
-    printf("%s\n", build_script.s);
+    char *build_script_path = malloc(cfg_parsed.output_path.arr->len + 1);
+    memcpy(build_script_path, cfg_parsed.output_path.arr->s, cfg_parsed.output_path.arr->len);
+    build_script_path[cfg_parsed.output_path.arr->len] = '\0';
+
+    save_build_script(build_script_path, build_script);
+    printf("Build script saved to: %s\n", build_script_path);
 
     return EXIT_SUCCESS;
 }

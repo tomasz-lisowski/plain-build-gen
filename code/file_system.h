@@ -4,6 +4,8 @@
 #include <inttypes.h>
 #include <stdlib.h>
 
+#include "parse.h"
+
 #ifndef FILE_SYSTEM_H
 #define FILE_SYSTEM_H
 
@@ -15,5 +17,7 @@ void read_file_into_buffer(HANDLE file,
                            uint64_t *num_bytes_read);
 
 uint64_t get_file_size(HANDLE file);
+
+void save_build_script(char *path, string_t build_script);
 
 #endif

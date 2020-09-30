@@ -5,22 +5,24 @@
 enum token
 {
     OUTPUT_PATH = 0,
-    SOURCE = 1,
-    INCLUDE = 2,
-    COMMENT = 3,
-    END = 4,
-    COMPILER = 5,
-    COMPILER_FLAGS = 6,
-    LINKER = 7,
-    LINKER_FLAGS = 8,
+    SOURCE_FILES,
+    OBJECT_FILES,
+    INCLUDE_PATHS,
+    COMMENT,
+    END,
+    COMPILER,
+    COMPILER_FLAGS,
+    LINKER,
+    LINKER_FLAGS,
     TOKEN_COUNT,
     TOKEN_UNKNOWN,
 };
 
 static string_t const tokens[TOKEN_COUNT] = {
     [OUTPUT_PATH] = {.len = 13, .s = "[output_path]"},
-    [SOURCE] = {.len = 8, .s = "[source]"},
-    [INCLUDE] = {.len = 9, .s = "[include]"},
+    [SOURCE_FILES] = {.len = 8, .s = "[source_files]"},
+    [OBJECT_FILES] = {.len = 8, .s = "[object_files]"},
+    [INCLUDE_PATHS] = {.len = 9, .s = "[include_paths]"},
     [COMMENT] = {.len = 2, .s = "//"},
     [END] = {.len = 5, .s = "[end]"},
     [COMPILER] = {.len = 10, .s = "[compiler]"},
@@ -112,11 +114,14 @@ static uint64_t parse_section(
     case OUTPUT_PATH:
         section = &(cfg_parsed->output_path);
         break;
-    case SOURCE:
-        section = &(cfg_parsed->source);
+    case SOURCE_FILES:
+        section = &(cfg_parsed->source_files);
         break;
-    case INCLUDE:
-        section = &(cfg_parsed->include);
+    case OBJECT_FILES:
+        section = &(cfg_parsed->object_files);
+        break;
+    case INCLUDE_PATHS:
+        section = &(cfg_parsed->include_paths);
         break;
     case COMPILER:
         section = &cfg_parsed->compiler;
@@ -164,7 +169,7 @@ static uint64_t parse_section(
 
 config_t parse_cfg_raw(string_t cfg_raw)
 {
-    config_t cfg_parsed;
+    config_t cfg_parsed = {0};
     uint64_t bytes_read = 0;
     string_t line;
     while (bytes_read < cfg_raw.len)

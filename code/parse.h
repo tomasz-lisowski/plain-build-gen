@@ -21,8 +21,9 @@ typedef struct
 typedef struct
 {
     parsed_section_t output_path;
-    parsed_section_t source;
-    parsed_section_t include;
+    parsed_section_t source_files;
+    parsed_section_t object_files;
+    parsed_section_t include_paths;
     parsed_section_t compiler;
     parsed_section_t compiler_flags;
     parsed_section_t linker;

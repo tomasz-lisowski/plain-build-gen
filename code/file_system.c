@@ -50,3 +50,33 @@ uint64_t get_file_size(HANDLE file)
     }
     return (uint64_t)file_size.QuadPart;
 }
+
+void save_build_script(char *path, string_t build_script)
+{
+    HANDLE build_script_handle = CreateFileA(
+        path,
+        GENERIC_WRITE,
+        FILE_SHARE_READ,
+        0,
+        CREATE_ALWAYS,
+        FILE_ATTRIBUTE_NORMAL,
+        0);
+    if (build_script_handle == INVALID_HANDLE_VALUE)
+    {
+        fprintf(stderr, "Failed to create the build script file on disk.\n");
+        exit(EXIT_FAILURE);
+    }
+
+    DWORD bytes_written = 0;
+    BOOL success = WriteFile(
+        build_script_handle,
+        build_script.s,
+        build_script.len,
+        &bytes_written,
+        0);
+    if (!success)
+    {
+        fprintf(stderr, "Failed to write the build script to disk.\n");
+        exit(EXIT_FAILURE);
+    }
+}
