@@ -1,7 +1,8 @@
 # Plain Build Gen
-A utility which reads a config file describing what should be built and gnerates a windows batch 
-script which can then be used to build the program. This avoids having to run a build system which 
-might be desirable.
+A utility which reads a config file describing what should be built and how, and generates a 
+Windows batch script which can then be used to build the C code. This avoids having to run a build 
+system which might be desirable but if there are new files or extra libraries, this obviously 
+needs to be re-run.
 ## Usage
 There is an example config file at `/misc/test.plain_build_gen.cfg` which can be passed into the 
 tool to generate a build script for building itself. This config file also serves as a showcase of 
