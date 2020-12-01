@@ -1,4 +1,7 @@
-# Tools
+# Plain Build Gen
+A utility which reads a config file describing what should be built and gnerates a windows batch 
+script which can then be used to build the program. This avoids having to run a build system which might be 
+desirable.
 ## Setup
 Ensure that the path to `vcvars64.bat` has been added to the `PATH` environment variable then 
 create a shortcut to the command line and append the following to the target making sure to 
